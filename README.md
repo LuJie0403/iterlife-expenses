@@ -20,10 +20,10 @@
 
 ```bash
 cd /Users/iter_1024/repository/iterlife-expenses
-bash full-deploy.sh
+bash deploy-expenses-stack.sh
 ```
 
-`full-deploy.sh` 会：
+`deploy-expenses-stack.sh` 会：
 
 1. 使用 `deploy/docker-compose.example.yml` 构建并启动 API/UI 容器
 2. 从仓库外加载 `backend.env`、`ui.env` 与 `ui-runtime-config.js`
@@ -32,10 +32,10 @@ bash full-deploy.sh
 更新部署：
 
 ```bash
-bash update-deploy.sh
+bash deploy-expenses-from-github.sh
 ```
 
-`update-deploy.sh` 会先备份双仓库代码，再同步 `origin/master` 后重建容器。
+`deploy-expenses-from-github.sh` 会先备份双仓库代码，再同步 `origin/$DEPLOY_BRANCH` 后重建容器。
 
 ## 配置文件（仓库外）
 

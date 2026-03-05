@@ -43,19 +43,26 @@ API：
 2. SQL 与字段约束对历史脏数据容忍度有限
 3. 生产配置项缺失时容易在登录链路暴露为 500
 
-## 4. 部署流程（Docker）
+## 4. 部署流程（标准化后）
 
-`full-deploy.sh`：
+`deploy-expenses-stack.sh`：
 
 1. 校验 Docker / Compose 与配置文件
 2. 基于 `deploy/docker-compose.example.yml` 构建并启动 API/UI
 3. 对 API 与 UI 进行健康检查
 
-`update-deploy.sh`：
+`deploy-expenses-from-github.sh`：
 
 1. 备份双仓库代码到 `/home/openclaw-expenses/backups/openclaw-expenses_YYYYMMDD-HHMMSS`
-2. 后端与前端分别同步到 `origin/master`
-3. 调用 `full-deploy.sh` 重建容器
+2. 后端与前端分别更新到 `origin/$DEPLOY_BRANCH`
+3. 采用 `git pull --ff-only`（禁止 `reset --hard origin/master` 作为标准流程）
+4. 调用 `deploy-expenses-stack.sh` 重建容器
+
+统一发布规则：
+
+1. 必须先在 GitHub 合并（默认 `master`）
+2. 服务器再执行标准更新脚本
+3. `rsync` 仅可用于应急，不可作为常规发布方式
 
 ## 5. 配置隔离原则
 
