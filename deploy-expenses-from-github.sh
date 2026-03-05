@@ -1,11 +1,15 @@
-#!/bin/bash
-# Update both repos, backup code, and redeploy dockerized stack.
+#!/usr/bin/env bash
+# Standard deployment updater for iterlife-expenses + iterlife-expenses-ui.
+# Policy: deploy only from GitHub merged branch via git pull --ff-only.
 
 set -Eeuo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 BACKEND_REPO_DIR="${BACKEND_REPO_DIR:-$ROOT_DIR}"
 UI_REPO_DIR="${UI_REPO_DIR:-$(cd "$ROOT_DIR/.." && pwd)/iterlife-expenses-ui}"
+
+DEPLOY_BRANCH="${DEPLOY_BRANCH:-master}"
+ALLOW_DIRTY="${ALLOW_DIRTY:-false}"
 
 BACKUP_ROOT="${BACKUP_ROOT:-/home/openclaw-expenses/backups}"
 BACKUP_PREFIX="${BACKUP_PREFIX:-openclaw-expenses}"
@@ -25,6 +29,17 @@ die() {
 check_git_repo() {
   local repo_dir="$1"
   [ -d "$repo_dir/.git" ] || die "Not a git repository: $repo_dir"
+}
+
+ensure_clean_repo() {
+  local repo_dir="$1"
+  if [ "$ALLOW_DIRTY" = "true" ]; then
+    log "ALLOW_DIRTY=true, skip clean working tree check for $repo_dir"
+    return 0
+  fi
+  if [ -n "$(git -C "$repo_dir" status --porcelain)" ]; then
+    die "Working tree is not clean: $repo_dir (commit/stash/discard changes first, or set ALLOW_DIRTY=true)"
+  fi
 }
 
 backup_repo() {
@@ -52,15 +67,27 @@ backup_repo() {
   fi
 }
 
-update_repo_to_master() {
+update_repo_branch() {
   local repo_dir="$1"
-  log "Updating repo to origin/master: $repo_dir"
-  git -C "$repo_dir" fetch origin
-  git -C "$repo_dir" reset --hard origin/master
+  log "Updating repo to origin/${DEPLOY_BRANCH} via fast-forward pull: $repo_dir"
+
+  git -C "$repo_dir" fetch --prune origin
+  git -C "$repo_dir" show-ref --verify --quiet "refs/remotes/origin/${DEPLOY_BRANCH}" \
+    || die "Remote branch not found: origin/${DEPLOY_BRANCH} ($repo_dir)"
+
+  if git -C "$repo_dir" show-ref --verify --quiet "refs/heads/${DEPLOY_BRANCH}"; then
+    git -C "$repo_dir" switch "${DEPLOY_BRANCH}"
+  else
+    git -C "$repo_dir" switch -c "${DEPLOY_BRANCH}" "origin/${DEPLOY_BRANCH}"
+  fi
+
+  git -C "$repo_dir" pull --ff-only origin "${DEPLOY_BRANCH}"
 }
 
 check_git_repo "$BACKEND_REPO_DIR"
 check_git_repo "$UI_REPO_DIR"
+ensure_clean_repo "$BACKEND_REPO_DIR"
+ensure_clean_repo "$UI_REPO_DIR"
 
 if [ "$SKIP_CODE_BACKUP" != "true" ]; then
   mkdir -p "$BACKUP_ROOT" || die "Failed to create backup root: $BACKUP_ROOT"
@@ -76,12 +103,12 @@ else
   log "Skipping code backup (SKIP_CODE_BACKUP=true)."
 fi
 
-update_repo_to_master "$BACKEND_REPO_DIR"
-update_repo_to_master "$UI_REPO_DIR"
+update_repo_branch "$BACKEND_REPO_DIR"
+update_repo_branch "$UI_REPO_DIR"
 
 log "Triggering dockerized full deployment..."
 BACKEND_REPO_DIR="$BACKEND_REPO_DIR" \
 UI_REPO_DIR="$UI_REPO_DIR" \
-bash "$ROOT_DIR/full-deploy.sh"
+bash "$ROOT_DIR/deploy-expenses-stack.sh"
 
 log "Update deployment process finished."
