@@ -61,6 +61,7 @@ DEPLOY_BRANCH=main bash deploy-expenses-from-github.sh
 
 常用参数：
 - `DEPLOY_BRANCH`：发布分支（默认 `main`）
+
 - `ALLOW_DIRTY`：是否允许本地有未提交变更（默认 `false`）
 - `SKIP_CODE_BACKUP`：是否跳过发布前备份（默认 `false`）
 
