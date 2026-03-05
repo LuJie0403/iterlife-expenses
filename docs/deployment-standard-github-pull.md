@@ -10,7 +10,7 @@
 
 1. 本地开发并提交到功能分支
 2. push 到 GitHub 并发起 PR
-3. PR 合并到发布分支（默认 `master`）
+3. PR 合并到发布分支（默认 `main`）
 4. 登录服务器执行更新脚本（脚本内部执行 `git pull --ff-only`）
 5. Docker 重建与健康检查
 
@@ -56,11 +56,12 @@ chmod 600 /apps/config/iterlife-expenses/backend.env /apps/config/iterlife-expen
 
 ```bash
 cd /apps/iterlife-expenses
-DEPLOY_BRANCH=master bash deploy-expenses-from-github.sh
+DEPLOY_BRANCH=main bash deploy-expenses-from-github.sh
 ```
 
 常用参数：
-- `DEPLOY_BRANCH`：发布分支（默认 `master`）
+- `DEPLOY_BRANCH`：发布分支（默认 `main`）
+
 - `ALLOW_DIRTY`：是否允许本地有未提交变更（默认 `false`）
 - `SKIP_CODE_BACKUP`：是否跳过发布前备份（默认 `false`）
 
@@ -84,5 +85,5 @@ curl -I https://expenses.iterlife.com
 ## 8. 回滚建议
 
 1. GitHub 回滚到上一个稳定提交（revert）
-2. 服务器重新执行：`DEPLOY_BRANCH=master bash deploy-expenses-from-github.sh`
+2. 服务器重新执行：`DEPLOY_BRANCH=main bash deploy-expenses-from-github.sh`
 3. 必要时结合 Docker 历史镜像回滚
